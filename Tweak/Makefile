@@ -1,5 +1,5 @@
 ARCHS = arm64 arm64e
-TARGET = iphone:clang:11.2:11.2
+TARGET = iphone:clang:11.1:11.0
 
 include $(THEOS)/makefiles/common.mk
 
@@ -10,3 +10,6 @@ $(TWEAK_NAME)_EXTRA_FRAMEWORKS += Cephei
 ADDITIONAL_OBJCFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
+before-stage::
+	find . -name ".DS_Store" -delete
