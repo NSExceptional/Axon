@@ -115,7 +115,6 @@
     }
 }
 
-
 -(void)modifyNotificationRequest:(NCNotificationRequest *)req {
     if (!req || ![req notificationIdentifier] || !req.bulletin || !req.bulletin.sectionID) return;
     NSString *bundleIdentifier = req.bulletin.sectionID;
