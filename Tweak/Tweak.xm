@@ -297,46 +297,6 @@ NCNotificationDispatcher *dispatcher = nil;
 
 %end
 
-%group AxonIntegrityFail
-
-%hook SBIconController
-
-%property (retain,nonatomic) WKWebView *axnIntegrityView;
-
--(void)loadView{
-    %orig;
-    if (!dpkgInvalid) return;
-    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
-    self.axnIntegrityView = [[WKWebView alloc] initWithFrame:self.view.bounds configuration:configuration];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"https://piracy.nepeta.me/"]];
-    [self.axnIntegrityView loadRequest:request];
-    [self.view addSubview:self.axnIntegrityView];
-    [self.view sendSubviewToBack:self.axnIntegrityView];
-}
-
--(void)viewDidAppear:(BOOL)animated{
-    %orig;
-    if (!dpkgInvalid) return;
-    UIAlertController *alertController = [UIAlertController
-        alertControllerWithTitle:@"😡😡😡"
-        message:@"The build of Axon you're using comes from an untrusted source. Pirate repositories can distribute malware and you will get subpar user experience using any tweaks from them.\nRemember: Axon is free. Uninstall this build and install the proper version of Axon from:\nhttps://repo.nepeta.me/\n(it's free, damnit, why would you pirate that!?)\n\nIf you're seeing this message but have obtained Axon from an official source, add https://repo.nepeta.me/ to Cydia or Sileo and respring."
-        preferredStyle:UIAlertControllerStyleAlert
-    ];
-
-    [alertController addAction:[UIAlertAction actionWithTitle:@"Damn!" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        UIApplication *application = [UIApplication sharedApplication];
-        [application openURL:[NSURL URLWithString:@"https://repo.nepeta.me/"] options:@{} completionHandler:nil];
-
-        [self dismissViewControllerAnimated:YES completion:NULL];
-    }]];
-
-    [self presentViewController:alertController animated:YES completion:NULL];
-}
-
-%end
-
-%end
-
 /* Hide all notifications on open. */
 
 static void displayStatusChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
@@ -344,15 +304,7 @@ static void displayStatusChanged(CFNotificationCenterRef center, void *observer,
     [[AXNManager sharedInstance].view refresh];
 }
 
-%ctor{
-    NSLog(@"[Axon] init");
-
-    dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axon.list"];
-    /*if (!dpkgInvalid) dpkgInvalid = !([[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/lib/apt/lists/repo.nepeta.me_._Release"]
-    || [[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/mobile/Library/Caches/com.saurik.Cydia/lists/repo.nepeta.me_._Release"]
-    || [[NSFileManager defaultManager] fileExistsAtPath:@"/private/var/mobile/Documents/xyz.willy.Zebra/zebra.db"]);*/
-    if (!dpkgInvalid) dpkgInvalid = ![[NSFileManager defaultManager] fileExistsAtPath:@"/var/lib/dpkg/info/me.nepeta.axon.md5sums"];
-
+%ctor {
     HBPreferences *preferences = [[HBPreferences alloc] initWithIdentifier:@"me.nepeta.axon"];
     [preferences registerBool:&enabled default:YES forKey:@"Enabled"];
     [preferences registerBool:&hapticFeedback default:YES forKey:@"HapticFeedback"];
@@ -375,25 +327,4 @@ static void displayStatusChanged(CFNotificationCenterRef center, void *observer,
             [AXNManager sharedInstance].view.showByDefault = showByDefault;
         }
     }];
-
-    if (!dpkgInvalid && enabled) {
-        BOOL ok = false;
-        
-        ok = ([[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/var/lib/dpkg/info/%@%@%@%@%@%@%@%@%@.axon.md5sums", @"m", @"e", @".", @"n", @"e", @"p", @"e", @"t", @"a"]]
-                /* &&
-                ([[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/lib/apt/lists/repo.%@%@%@%@%@%@.me_._Release", @"n", @"e", @"p", @"e", @"t", @"a"]] ||
-                [[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/mobile/Library/Caches/com.saurik.Cydia/lists/repo.%@%@%@%@%@%@.me_._Release", @"n", @"e", @"p", @"e", @"t", @"a"]] ||
-                [[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"/private/var/mobile/Documents/xyz.willy.Zebra/%@%@%@%@%@.db", @"z", @"e", @"b", @"r", @"a"]])*/
-        );
-
-        if (ok && [@"nepeta" isEqualToString:@"nepeta"]) {
-            %init(Axon);
-            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-            return;
-        } else {
-            dpkgInvalid = YES;
-        }
-    }
-
-    if (enabled) %init(AxonIntegrityFail);
 }
